@@ -44,6 +44,7 @@ function getValidMoves(board)
     return lis;
 }
 
+/* Game Logic From Here*/
 function checkHorizontal(x, y)
 {
     let oppo = 0, prop = 0;
