@@ -1,4 +1,4 @@
-let boardDimension = 20; // a grid of cellDim * cellDim
+let boardDimension = 15; // a grid of cellDim * cellDim
 let board = [];
 let player = 1;
 let ai = -1;
@@ -9,6 +9,17 @@ let cellWidth, cellHeight;
 let validMoves = [];
 let checkValidMoves = [];
 let score = [0, 10, 200, 10000, 10005000, 10000000000];
+let newScore = {
+    'openTwo': 1000,
+    'openThree': 100000,
+    'cappedThree': 10000,
+    'openFour': 1000000,
+    'cappedFour': 100050,
+    'gappedThree': 100000,
+    'gappedFour': 100050,
+    'consecutiveFive': 1000000000
+}
+let replay;
 let prevCell = null;
 
 
@@ -18,9 +29,6 @@ function setup()
     initialize();
     cellWidth = width / boardDimension;
     cellHeight = height / boardDimension;
-    let replay = createButton("Replay!");
-    replay.size(600, 50);
-    replay.mousePressed(replayGame);
 }
 
 function draw()
@@ -31,7 +39,7 @@ function draw()
     let winner = findWinner();
     if (winner)
     {
-        console.log(winner);
+        getButton("Player " + (winner === 1 ? "X" : "O") + " has won! \n Click here to replay");
         noLoop();
         return;
     }
@@ -39,27 +47,29 @@ function draw()
     if (currentPlayer === ai)
     {
         validMoves = getValidMoves(board);
+        shuffle(validMoves);
         // sortValidMoves(ai);
         checkValidMoves = new Array(validMoves.length + 2).fill(false);
         let [x, y] = ai_move(board);
-        if (!x && !y)
+        if (x !== undefined && y !== undefined)
+            board[x][y] = getCurrentPlayer({x: x, y: y});
+
+        validMoves = getValidMoves(board);
+        if (validMoves.length === 0)
         {
-            console.log("Game hoa`");
+            getButton("Draw! \n Click here to replay")
             noLoop();
             return;
         }
-        console.log(x + " " + y);
-        board[x][y] = getCurrentPlayer({x: x, y: y});
     }
 
     winner = findWinner();
     if (winner)
     {
-        console.log(winner);
+        getButton("Player " + (winner === 1 ? "X" : "O") + " has won! \n Click here to replay");
         noLoop();
         return;
     }
-    
 }
 
 function drawEverything()
@@ -165,73 +175,11 @@ function getCurrentPlayer(coord)
 
 function findWinner()
 {
-    function checkHorizontal(x, y)
-    {
-        if (y + 4 >= boardDimension)
-            return null;
-        let s = 0;
-        for (let i = y; i < y + 5; i++)
-            if (board[x] != undefined)
-                s += board[x][i];
-        if (s === playerWin)
-            return player;
-        else if (s === aiWin)
-            return ai;
-        return null;
-    }
-
-    function checkVertical(x, y)
-    {
-        let s = 0;
-        for (let i = x; i < x + 5; i++)
-            if (board[x+i] != undefined)
-                s += board[i][y];
-        if (s === playerWin)
-            return player;
-        else if (s === aiWin)
-            return ai;
-        return null;
-    }
-
-    function checkDiagonal(x, y)
-    {
-        let s = 0;
-        for (let i = 0; i < 5; i++)
-            if (board[x+i] != undefined)
-                s += board[x+i][y+i];
-        if (s === playerWin)
-            return player;
-        else if (s === aiWin)
-            return ai;
-        s = 0;
-        for (let i = 0; i < 5; i++)
-            if (board[x+i] != undefined)
-                s += board[x+i][y-i];
-        if (s === playerWin)
-            return player;
-        else if (s === aiWin)
-            return ai;
-        return null;
-    }
-    let winner = null;
-    for (let i = 0; i < boardDimension; i++)
-    {
-        for (let j = 0; j < boardDimension; j++)
-        {
-            winner = checkHorizontal(i, j);
-            if (winner)
-                return winner;
-            winner = checkVertical(i, j);
-            if (winner)
-                return winner;
-            winner = checkDiagonal(i, j); 
-            if (winner)
-                return winner;
-        }
-        if (winner)
-            break;
-    }
-    return winner;
+    if (gappedFour_consecutiveFive(player)[1])
+        return player;
+    else if (gappedFour_consecutiveFive(ai)[1])
+        return ai;
+    return null;
 }
 
 function replayGame()
@@ -245,8 +193,17 @@ function mousePressed()
 
     if (coord.x >= boardDimension || coord.y >= boardDimension || board[coord.x][coord.y] != 0)
         return;
-
+    validMoves = getValidMoves(board);
     board[coord.x][coord.y] = getCurrentPlayer(coord);
+}
+
+function getButton(message)
+{
+    if (replay)
+        replay.remove();
+    replay = createButton(message);
+    replay.size(600, 50);
+    replay.mousePressed(replayGame);
 }
 
 function initialize()
@@ -260,5 +217,6 @@ function initialize()
             board[i].push(0);
     }
     prevCell = null;
+    getButton("Replay!");
     loop();
 }
